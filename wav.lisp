@@ -46,6 +46,15 @@
                 :extra-format-bytes extra-format-bytes
                 :bytes buffer)))))
 
+(defun format-chunk-data-writer (chunk-data stream)
+  (assert (eql (getf chunk-data :compression-code) 1))
+  (riff:write-u2 (getf chunk-data :compression-code) stream)
+  (riff:write-u2 (getf chunk-data :number-of-channels) stream)
+  (riff:write-u4 (getf chunk-data :sample-rate) stream)
+  (riff:write-u4 (getf chunk-data :average-bytes-per-second) stream)
+  (riff:write-u2 (getf chunk-data :block-align) stream)
+  (riff:write-u2 (getf chunk-data :significant-bits-per-sample) stream))
+
 (defparameter *format-chunk* nil)
 
 (defun wrap-format-chunk-data-reader (&optional (chunk-data-reader #'riff:default-chunk-data-reader))
@@ -56,6 +65,14 @@
         (setf *format-chunk* 
               (format-chunk-data-reader stream chunk-id chunk-data-size))
         (funcall chunk-data-reader stream chunk-id chunk-data-size))))
+
+(defun wrap-format-chunk-data-writer (&optional (chunk-data-writer #'riff:default-chunk-data-writer))
+  "Creates a new chunk-data-writer that wraps the supplied
+   chunk-data-writer with the ability to emit format chunks."
+  (lambda (chunk-id chunk-data stream &key (start 0) (end (length chunk-data)))
+    (if (string= chunk-id "fmt ")
+        (format-chunk-data-writer chunk-data stream)
+        (funcall chunk-data-writer chunk-id chunk-data stream :start start :end end))))
 
 (defun read-u1-sample (stream)
   "Reads a 1 byte sample from stream, returning a corresponding float
@@ -121,4 +138,7 @@
   "Reads a wav file from filespec."
   (let (*format-chunk*)
     (riff:read-riff-file filespec :chunk-data-reader chunk-data-reader)))
+
+(defun write-wav-file (chunks filespec &key (chunk-data-writer (wrap-format-chunk-data-writer)))
+  (riff:write-riff-file chunks filespec :chunk-data-writer chunk-data-writer))
 

@@ -14,6 +14,7 @@
            #:+mpeg+
            #:+experimental+
            #:read-wav-file
+           #:write-wav-file
            #:format-chunk-data-reader
            #:wrap-format-chunk-data-reader
            #:data-chunk-data-samples-reader
