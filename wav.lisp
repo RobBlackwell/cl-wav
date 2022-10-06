@@ -33,7 +33,7 @@
               :block-align block-align
               :significant-bits-per-sample significant-bits-per-sample)
 
-        (let
+        (let*
           ((extra-format-bytes (riff:read-u2 stream))
            (buffer (make-array extra-format-bytes :element-type (stream-element-type stream)))
            (extra-bytes (read-sequence buffer stream)))
